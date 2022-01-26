@@ -14,7 +14,12 @@ class AccountsWidget {
    * необходимо выкинуть ошибку.
    * */
   constructor( element ) {
-
+    if (!element) {
+      throw new Error('Элемент не должен быть пустым');
+    }
+    this.element = element;
+    this.registerEvents();
+    this.update();
   }
 
   /**
@@ -25,7 +30,15 @@ class AccountsWidget {
    * вызывает AccountsWidget.onSelectAccount()
    * */
   registerEvents() {
-
+    document.querySelector('.create-account').onclick = (event) => {
+      App.getModal('createAccount').open();
+    }
+    /* TODO CHECK*/
+    this.element.querySelectorAll('.account').forEach((item) => {
+      item.onclick = (event) => {
+        this.onSelectAccount(item);
+      }
+    });
   }
 
   /**
@@ -39,7 +52,17 @@ class AccountsWidget {
    * метода renderItem()
    * */
   update() {
-
+    let user = User.current();
+    if (user) {
+      Account.list({}, (err, response) => {
+        if (response && response.success) {
+          this.clear();
+          response.data.forEach((item) => {
+            this.renderItem(item);
+          })
+        }
+      })
+    }
   }
 
   /**
@@ -48,7 +71,9 @@ class AccountsWidget {
    * в боковой колонке
    * */
   clear() {
-
+    this.element.querySelectorAll('.account').forEach((item) => {
+      item.remove();
+    })
   }
 
   /**
@@ -59,7 +84,12 @@ class AccountsWidget {
    * Вызывает App.showPage( 'transactions', { account_id: id_счёта });
    * */
   onSelectAccount( element ) {
-
+    let activeAccount = this.element.querySelector('.account.active')
+    if (activeAccount) {
+      activeAccount.classList.remove('active');
+    }
+    element.classList.add('active');
+    App.showPage('transactions', {account_id: element.dataset.id})
   }
 
   /**
@@ -68,7 +98,12 @@ class AccountsWidget {
    * item - объект с данными о счёте
    * */
   getAccountHTML(item){
-
+    return `<li class="account" data-id="${item.id}">
+        <a href="#">
+          <span>${item.name}</span> /
+          <span>${item.sum} ₽</span>
+        </a>
+      </li>`
   }
 
   /**
@@ -78,6 +113,10 @@ class AccountsWidget {
    * и добавляет его внутрь элемента виджета
    * */
   renderItem(data){
-
+    this.element.insertAdjacentHTML('beforeend', this.getAccountHTML(data));
+    let accountElement = this.element.querySelector(`.account[data-id="${data.id}"]`);
+    accountElement.onclick = (event) => {
+      this.onSelectAccount(accountElement);
+    }
   }
 }
